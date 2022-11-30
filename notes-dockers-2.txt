@@ -1,0 +1,104 @@
+#notes, docker lecture 2
+#aimed at learning docker networking 
+
+#run this
+docker run -p 80 -d httpd
+#runs httpd in background as daemon (-d)
+
+#setup on Ashish's machine.
+#HOST machine is running a "VM" called docker, using the command "virsh". Details of virsh are not covered here. The name "docker" for a VM is confusing, but that's ok as we know it now. The "docker" VM is used to create dockers in this demo. 
+
+#tried from host
+curl docker
+#does not work
+#he configured /etc/hosts on HOST to access "docker" that is a VM using it's hostname "docker"
+
+#run on host
+docker ps
+#shows the port mappings, port 49154 of host (in his case) was mapped to 80 in docker
+
+#run on host
+curl docker:49154 
+#works
+curl docker
+#does not work
+
+#run 
+docker run -p 80:80 -d httpd 
+#this maps port 80 on host to port 80 on httpd docker 
+curl docker
+#works
+
+#try
+docker port <container-id>
+
+#stop and remove a docker
+docker stop <container-id>
+docker rm <container-id>
+or
+docker rm -f <container-id>
+
+#networking 
+docker network ls
+#shows all networks 
+
+docker network create my-net
+#creates a network
+
+docker run --rm -ti --net my-net --name my-server  ubuntu 
+#creates a docker called my-server that uses my-net network
+
+docker describe my-server | less
+# run in another tab, shows network is my-net 
+#if there is another docker in same network, then ?
+
+
+#task: create two dockers in same network and ensure they can ping to each other. Then create two dockers in different networks and see that they can not ping to each other.
+
+#allocating volume to docker for persistent storage
+docker run --ti --rm -v  /root/data/:/data --name fedora1 fedora bash 
+#with this /data in docker is mapped to /root/data in host
+#create a file in /data inside docker 
+
+
+docker run --ti --rm --volumes-from fedora1 --name myubuntu ubuntu bash 
+#shares the volume with the earlier created docker
+#run ls /data in this and you see the file created in earlier fedora1 docker 
+
+--
+#dockerfile
+#inside a file called 'Dockerfile'
+from fedora
+run echo "Docker demo"
+CMD echo "hello world"
+
+#outside on prompt run
+docker build -t myapp .
+#the above did everything and exited. It built image, run it, and exited it.
+
+# change fedora in dockerfile to httpd
+# change CMD line to /bin/bash 
+#run same command to build
+# Divya corrected saying that build will only build the image and you need to use "docker run "  with image name to run it
+
+#run
+docker run --rm --ti myapp
+
+#run commands do pre-work, the CMD does the actual work
+# you can not have run command after CMD in Dockerfile
+#when you do
+docker run myapp
+#then it will print "hello world" and not "docker demo"
+#use of "run" inside Dockerfile: to do mounting of volumes, etc. 
+
+docker logs < container-name>
+# shows logs ?
+
+#how to build base image? 
+#see Dockerfile of Fedora at https://github.com/fedora-cloud/docker-brew-fedora/blob/137355c3944c2caf371c8c2b4d8ff0d111c367d3/x86_64/Dockerfile and correpsonding tar.xz file at https://github.com/fedora-cloud/docker-brew-fedora/blob/137355c3944c2caf371c8c2b4d8ff0d111c367d3/x86_64/fedora-37-x86_64.tar.xz
+
+#also see:
+https://docs.docker.com/engine/reference/builder/
+https://subscription.packtpub.com/book/cloud-and-networking/9781838983444/2/ch02lvl1sec12/common-directives-in-dockerfiles
+
+
